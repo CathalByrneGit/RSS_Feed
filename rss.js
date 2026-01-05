@@ -1,10 +1,15 @@
 // rss.js - RSS Fetching and Parsing Logic
 
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+// Multiple CORS proxy options as fallbacks
+const CORS_PROXIES = [
+    'https://api.allorigins.win/raw?url=',
+    'https://corsproxy.io/?',
+    'https://api.codetabs.com/v1/proxy?quest='
+];
 
 /**
  * Fetches an RSS feed from the given URL
- * Attempts direct fetch first, falls back to CORS proxy if needed
+ * Attempts direct fetch first, falls back to CORS proxies if needed
  * @param {string} url - The RSS feed URL
  * @returns {Promise<string>} - The XML text of the feed
  */
@@ -22,7 +27,8 @@ export async function fetchFeed(url) {
         const response = await fetch(url, {
             headers: {
                 'Accept': 'application/rss+xml, application/xml, text/xml, */*'
-            }
+            },
+            mode: 'cors'
         });
 
         if (!response.ok) {
@@ -30,26 +36,36 @@ export async function fetchFeed(url) {
         }
 
         const text = await response.text();
+        console.log('Direct fetch successful');
         return text;
 
     } catch (directError) {
-        console.log('Direct fetch failed, trying CORS proxy:', directError.message);
+        console.log('Direct fetch failed, trying CORS proxies:', directError.message);
 
-        // Try with CORS proxy
-        try {
-            const proxyUrl = CORS_PROXY + encodeURIComponent(url);
-            const response = await fetch(proxyUrl);
+        // Try each CORS proxy in sequence
+        for (let i = 0; i < CORS_PROXIES.length; i++) {
+            const proxy = CORS_PROXIES[i];
+            try {
+                console.log(`Trying CORS proxy ${i + 1}/${CORS_PROXIES.length}:`, proxy);
+                const proxyUrl = proxy + encodeURIComponent(url);
+                const response = await fetch(proxyUrl);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+
+                const text = await response.text();
+                console.log(`CORS proxy ${i + 1} successful`);
+                return text;
+
+            } catch (proxyError) {
+                console.log(`CORS proxy ${i + 1} failed:`, proxyError.message);
+                // Continue to next proxy
             }
-
-            const text = await response.text();
-            return text;
-
-        } catch (proxyError) {
-            throw new Error(`Failed to fetch feed: ${proxyError.message}`);
         }
+
+        // All proxies failed
+        throw new Error('Unable to fetch feed. This feed may not be accessible due to CORS restrictions. Please try a different feed URL.');
     }
 }
 

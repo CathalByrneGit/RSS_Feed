@@ -1,0 +1,12 @@
+feeds:
+  - name: "Hacker News"
+    url: "https://hnrss.org/frontpage"
+
+  - name: "NY Times World"
+    url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+
+  - name: "Ars Technica"
+    url: "https://feeds.arstechnica.com/arstechnica/index"
+
+  - name: "Reddit Programming"
+    url: "https://www.reddit.com/r/programming/.rss"
