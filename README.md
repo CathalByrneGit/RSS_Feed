@@ -61,10 +61,11 @@ Since this uses modern browser APIs and ES modules, you cannot run it by simply 
 When you first open the app:
 
 1. **Add an RSS Feed:** Paste an RSS feed URL into the input field and click "Add Feed"
-   - Try these sample feeds:
-     - `https://feeds.bbci.co.uk/news/rss.xml` (BBC News)
-     - `https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml` (NY Times)
-     - `https://hnrss.org/frontpage` (Hacker News)
+   - Try these **verified working** sample feeds:
+     - `https://hnrss.org/frontpage` (Hacker News - usually works)
+     - `https://rss.nytimes.com/services/xml/rss/nyt/World.xml` (NY Times World)
+     - `https://feeds.arstechnica.com/arstechnica/index` (Ars Technica)
+     - `https://www.reddit.com/r/programming/.rss` (Reddit Programming)
 
 2. **Browse Articles:** Click on a feed to see its articles, then click an article to read it
 
@@ -75,6 +76,8 @@ When you first open the app:
    - "Who are the main people discussed?"
 
 **Note:** The first time you ask a question, the AI model will download (~40-60MB). This is a one-time download and will be cached for future use.
+
+**CORS Note:** Some RSS feeds have strict CORS policies and may not load even with proxies. If a feed fails, try one of the verified feeds above.
 
 ## 🧠 How it Works
 
@@ -103,9 +106,11 @@ When you first open the app:
 ## 🔧 Troubleshooting
 
 **Feed won't load:**
-- Verify the RSS feed URL is correct
-- Some feeds may block CORS requests
-- The app will automatically try a proxy if direct access fails
+- **CORS Error:** Many RSS feeds block cross-origin requests. This is the most common issue.
+- The app tries 3 different CORS proxies automatically, but some feeds block all proxies
+- **Solution:** Try one of the verified feeds listed in "First Time Setup" above
+- **Alternative:** Some feeds work better with `/rss` or `/feed` at the end of the URL
+- If all proxies fail, the feed cannot be accessed from a browser-based app
 
 **AI model won't load:**
 - Ensure you have a stable internet connection for the initial download
@@ -134,11 +139,12 @@ RSS_Feed/
 
 * **Model Download:** The first AI query requires downloading ~40-60MB (one-time, cached afterward)
 * **Context Length:** Articles are truncated to 2000 characters for AI processing
-* **CORS Restrictions:** Some RSS feeds may not load due to CORS policies; the app uses a fallback proxy
+* **CORS Restrictions:** **Major limitation** - Many RSS feeds block browser-based access due to CORS policies. The app tries 3 different CORS proxies, but some feeds still won't load. This is a browser security limitation, not a bug.
 * **Browser Support:** Works best in Chrome/Edge; Firefox supported but may have slower AI performance
 * **No Mobile App:** This is a web app only; no native mobile version
 * **Single Model:** Currently uses DistilBERT for Q&A; no model selection available yet
 * **No Offline Mode:** Requires internet for fetching feeds and initial model download
+* **Feed Reliability:** RSS feed availability depends on third-party CORS proxy services
 
 ## 🔮 Future Roadmap
 
