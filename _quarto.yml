@@ -1,6 +1,11 @@
 project:
   type: website
   output-dir: _site
+  render:
+    - "*.qmd"
+    - "!README.md"
+    - "!progress.md"
+    - "!Agents.md"
 
 website:
   title: "RSS Feed Reader"
