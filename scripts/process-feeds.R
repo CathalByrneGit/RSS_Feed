@@ -10,17 +10,24 @@ library(stringr)
 #' @return cleaned and processed data.frame
 process_articles <- function(articles) {
 
+  message(sprintf("DEBUG: process_articles() called with %d rows", nrow(articles)))
+
   if (nrow(articles) == 0) {
+    message("DEBUG: No articles to process, returning empty data frame")
     return(articles)
   }
 
-  message("Processing articles...")
+  message(sprintf("DEBUG: Processing %d articles...", nrow(articles)))
+  message(sprintf("DEBUG: Article columns: %s", paste(names(articles), collapse = ", ")))
 
   processed <- articles %>%
     # Parse dates
     mutate(
       pub_date = as_datetime(item_pub_date, tz = "UTC"),
-      date_formatted = format(pub_date, "%B %d, %Y"),
+      date_formatted = format(pub_date, "%B %d, %Y")
+    ) %>%
+    # Add time ago (after pub_date is created)
+    mutate(
       time_ago = format_time_ago(pub_date)
     ) %>%
     # Clean descriptions and create excerpts
@@ -49,25 +56,30 @@ process_articles <- function(articles) {
   return(processed)
 }
 
-#' Format time ago string
-#' @param datetime POSIXct datetime
-#' @return character string like "2 hours ago"
+#' Format time ago string (vectorized)
+#' @param datetime POSIXct datetime vector
+#' @return character vector like "2 hours ago"
 format_time_ago <- function(datetime) {
-  now <- Sys.time()
-  diff <- as.numeric(difftime(now, datetime, units = "secs"))
+  # Vectorized version using sapply
+  sapply(datetime, function(dt) {
+    if (is.na(dt)) return("unknown")
 
-  if (diff < 60) {
-    return("just now")
-  } else if (diff < 3600) {
-    mins <- floor(diff / 60)
-    return(sprintf("%d minute%s ago", mins, ifelse(mins > 1, "s", "")))
-  } else if (diff < 86400) {
-    hours <- floor(diff / 3600)
-    return(sprintf("%d hour%s ago", hours, ifelse(hours > 1, "s", "")))
-  } else if (diff < 604800) {
-    days <- floor(diff / 86400)
-    return(sprintf("%d day%s ago", days, ifelse(days > 1, "s", "")))
-  } else {
-    return(format(datetime, "%b %d"))
-  }
+    now <- Sys.time()
+    diff <- as.numeric(difftime(now, dt, units = "secs"))
+
+    if (diff < 60) {
+      "just now"
+    } else if (diff < 3600) {
+      mins <- floor(diff / 60)
+      sprintf("%d minute%s ago", mins, ifelse(mins > 1, "s", ""))
+    } else if (diff < 86400) {
+      hours <- floor(diff / 3600)
+      sprintf("%d hour%s ago", hours, ifelse(hours > 1, "s", ""))
+    } else if (diff < 604800) {
+      days <- floor(diff / 86400)
+      sprintf("%d day%s ago", days, ifelse(days > 1, "s", ""))
+    } else {
+      format(dt, "%b %d")
+    }
+  }, USE.NAMES = FALSE)
 }
