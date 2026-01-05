@@ -1,0 +1,24 @@
+{
+  "name": "smart-rss-reader",
+  "version": "1.0.0",
+  "description": "A privacy-focused RSS reader with local AI-powered Q&A using transformers.js",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "serve": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "rss",
+    "feed-reader",
+    "ai",
+    "transformers.js",
+    "privacy",
+    "local-ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {},
+  "dependencies": {}
+}
