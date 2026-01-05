@@ -153,13 +153,16 @@ header h1 {
 }
 
 .feed-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-sm);
     background-color: white;
     border: 1px solid var(--color-border);
     border-radius: 4px;
-    cursor: pointer;
     transition: background-color 0.2s;
+    position: relative;
 }
 
 .feed-item:hover {
@@ -171,6 +174,11 @@ header h1 {
     background-color: rgba(0, 85, 204, 0.05);
 }
 
+.feed-item-content {
+    flex: 1;
+    cursor: pointer;
+}
+
 .feed-item h4 {
     font-size: 0.95rem;
     margin-bottom: var(--spacing-xs);
@@ -180,6 +188,24 @@ header h1 {
     font-size: 0.85rem;
     color: var(--color-muted);
     margin: 0;
+}
+
+.remove-feed-btn {
+    background-color: transparent;
+    border: none;
+    color: var(--color-muted);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: 4px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.remove-feed-btn:hover {
+    background-color: var(--color-error);
+    color: white;
 }
 
 .empty-state {
@@ -418,6 +444,66 @@ footer {
 
     .main-content {
         padding: var(--spacing-md);
+    }
+}
+
+/* === Notifications === */
+.error-notification,
+.success-notification {
+    position: fixed;
+    top: var(--spacing-lg);
+    right: var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    z-index: 2000;
+    animation: slideIn 0.3s ease-out;
+    max-width: 400px;
+}
+
+.error-notification {
+    background-color: var(--color-error);
+    color: white;
+}
+
+.success-notification {
+    background-color: var(--color-success);
+    color: white;
+}
+
+.error-notification span,
+.success-notification span {
+    flex: 1;
+}
+
+.close-error,
+.close-success {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0.8;
+}
+
+.close-error:hover,
+.close-success:hover {
+    opacity: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
     }
 }
 

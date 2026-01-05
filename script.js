@@ -84,11 +84,12 @@ async function handleAddFeed(e) {
 
         elements.feedUrlInput.value = '';
         hideLoading();
+        showSuccess(`Added feed: ${feed.title}`);
 
     } catch (error) {
         console.error('Error adding feed:', error);
         hideLoading();
-        alert(`Failed to add feed: ${error.message}`);
+        showError(`Failed to add feed: ${error.message}`);
     }
 }
 
@@ -104,11 +105,24 @@ function renderFeeds() {
         const feedEl = document.createElement('div');
         feedEl.className = 'feed-item';
         feedEl.innerHTML = `
-            <h4>${escapeHtml(feed.title)}</h4>
-            <p>${feed.articles.length} articles</p>
+            <div class="feed-item-content">
+                <h4>${escapeHtml(feed.title)}</h4>
+                <p>${feed.articles.length} articles</p>
+            </div>
+            <button class="remove-feed-btn" data-index="${index}" title="Remove feed">×</button>
         `;
 
-        feedEl.addEventListener('click', () => selectFeed(index));
+        // Click handler for selecting feed (only on the content area)
+        const contentArea = feedEl.querySelector('.feed-item-content');
+        contentArea.addEventListener('click', () => selectFeed(index));
+
+        // Click handler for remove button
+        const removeBtn = feedEl.querySelector('.remove-feed-btn');
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent feed selection
+            removeFeed(index);
+        });
+
         elements.feedsContainer.appendChild(feedEl);
     });
 }
@@ -116,6 +130,34 @@ function renderFeeds() {
 function selectFeed(index) {
     state.currentFeed = state.feeds[index];
     renderArticles();
+}
+
+function removeFeed(index) {
+    const feed = state.feeds[index];
+
+    // Confirm before removing
+    if (!confirm(`Remove "${feed.title}"?`)) {
+        return;
+    }
+
+    // Remove the feed
+    state.feeds.splice(index, 1);
+    saveFeedsToStorage();
+
+    // Clear current feed if it was the one removed
+    if (state.currentFeed === feed) {
+        state.currentFeed = null;
+        state.currentArticle = null;
+        elements.articleView.innerHTML = `
+            <div class="welcome-screen">
+                <h2>Feed Removed</h2>
+                <p>Select another feed from the sidebar to continue reading.</p>
+            </div>
+        `;
+        disableChat();
+    }
+
+    renderFeeds();
 }
 
 function renderArticles() {
@@ -182,6 +224,13 @@ function enableChat() {
     elements.chatLog.innerHTML = '<p class="chat-empty-state">Ask me anything about this article!</p>';
 }
 
+function disableChat() {
+    elements.chatForm.setAttribute('disabled', 'disabled');
+    elements.questionInput.setAttribute('disabled', 'disabled');
+    elements.chatForm.querySelector('button').setAttribute('disabled', 'disabled');
+    elements.chatLog.innerHTML = '<p class="chat-empty-state">Select an article to start asking questions</p>';
+}
+
 // ============================================
 // Chat / AI Interaction
 // ============================================
@@ -218,7 +267,8 @@ async function handleChatSubmit(e) {
     } catch (error) {
         console.error('Error getting AI response:', error);
         hideLoading();
-        addChatMessage('assistant', `Error: ${error.message}`);
+        addChatMessage('assistant', `❌ Error: ${error.message}`);
+        showError('Failed to get AI response. Please try again.');
     }
 }
 
@@ -287,6 +337,54 @@ function hideLoading() {
 
 function updateModelStatus(text) {
     elements.modelStatus.textContent = text;
+}
+
+function showError(message) {
+    // Create error notification
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-notification';
+    errorDiv.innerHTML = `
+        <span>${escapeHtml(message)}</span>
+        <button class="close-error">×</button>
+    `;
+
+    document.body.appendChild(errorDiv);
+
+    // Add close button handler
+    errorDiv.querySelector('.close-error').addEventListener('click', () => {
+        errorDiv.remove();
+    });
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (errorDiv.parentNode) {
+            errorDiv.remove();
+        }
+    }, 5000);
+}
+
+function showSuccess(message) {
+    // Create success notification
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-notification';
+    successDiv.innerHTML = `
+        <span>${escapeHtml(message)}</span>
+        <button class="close-success">×</button>
+    `;
+
+    document.body.appendChild(successDiv);
+
+    // Add close button handler
+    successDiv.querySelector('.close-success').addEventListener('click', () => {
+        successDiv.remove();
+    });
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (successDiv.parentNode) {
+            successDiv.remove();
+        }
+    }, 3000);
 }
 
 // ============================================
