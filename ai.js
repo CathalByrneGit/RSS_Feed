@@ -14,8 +14,9 @@ export class AIModel {
 
     /**
      * Initialize the AI model (loads transformers.js and the model)
+     * @param {Function} progressCallback - Callback for progress updates
      */
-    async initialize() {
+    async initialize(progressCallback) {
         if (this.isReady) {
             console.log('AI model already initialized');
             return;
@@ -29,20 +30,25 @@ export class AIModel {
         this.isLoading = true;
 
         try {
+            if (progressCallback) progressCallback('Loading AI library...', 10);
             console.log('Loading transformers.js library...');
 
             // Import the pipeline from transformers.js CDN
             const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0');
 
+            if (progressCallback) progressCallback('Downloading AI model (this may take a minute)...', 30);
             console.log('Loading AI model:', this.modelName);
             console.log('This may take a minute on first load...');
 
             // Create the question-answering pipeline
             this.pipeline = await pipeline('question-answering', this.modelName);
 
+            if (progressCallback) progressCallback('Initializing model...', 90);
+
             this.isReady = true;
             this.isLoading = false;
 
+            if (progressCallback) progressCallback('AI model ready!', 100);
             console.log('AI model loaded successfully!');
 
         } catch (error) {

@@ -35,6 +35,9 @@ const elements = {
 async function init() {
     console.log('Smart RSS Reader initializing...');
 
+    // Load saved theme preference
+    loadThemePreference();
+
     // Load saved feeds from localStorage
     loadFeedsFromStorage();
 
@@ -54,6 +57,15 @@ function setupEventListeners() {
 
     // Chat form
     elements.chatForm.addEventListener('submit', handleChatSubmit);
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboardShortcuts);
 }
 
 // ============================================
@@ -160,31 +172,67 @@ function removeFeed(index) {
     renderFeeds();
 }
 
-function renderArticles() {
+function renderArticles(searchQuery = '') {
     if (!state.currentFeed) return;
 
     const articles = state.currentFeed.articles;
+    const query = searchQuery.toLowerCase();
 
-    let html = `<h2>${escapeHtml(state.currentFeed.title)}</h2>`;
-    html += '<div class="articles-list">';
+    // Filter articles based on search query
+    const filteredArticles = query
+        ? articles.filter(article =>
+            article.title.toLowerCase().includes(query) ||
+            (article.description || '').toLowerCase().includes(query)
+          )
+        : articles;
 
-    articles.forEach((article, index) => {
-        html += `
-            <article class="article-preview" data-index="${index}">
-                <h3><a href="#" class="article-link">${escapeHtml(article.title)}</a></h3>
-                <p class="article-meta">${article.pubDate ? new Date(article.pubDate).toLocaleDateString() : ''}</p>
-                <p>${escapeHtml(article.description || '').substring(0, 150)}...</p>
-            </article>
-        `;
-    });
+    let html = `
+        <div class="feed-header">
+            <h2>${escapeHtml(state.currentFeed.title)}</h2>
+            <input
+                type="search"
+                id="article-search"
+                placeholder="Search articles..."
+                class="article-search-input"
+                value="${escapeHtml(searchQuery)}"
+            >
+        </div>
+    `;
 
-    html += '</div>';
+    if (filteredArticles.length === 0) {
+        html += '<p class="empty-state">No articles found matching your search.</p>';
+    } else {
+        html += '<div class="articles-list">';
+
+        filteredArticles.forEach((article) => {
+            const originalIndex = articles.indexOf(article);
+            html += `
+                <article class="article-preview" data-index="${originalIndex}">
+                    <h3><a href="#" class="article-link">${escapeHtml(article.title)}</a></h3>
+                    <p class="article-meta">${article.pubDate ? new Date(article.pubDate).toLocaleDateString() : ''}</p>
+                    <p>${escapeHtml(article.description || '').substring(0, 150)}...</p>
+                </article>
+            `;
+        });
+
+        html += '</div>';
+    }
+
     elements.articleView.innerHTML = html;
 
+    // Add search input handler
+    const searchInput = document.getElementById('article-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            renderArticles(e.target.value);
+        });
+    }
+
     // Add click handlers for articles
-    elements.articleView.querySelectorAll('.article-link').forEach((link, index) => {
+    elements.articleView.querySelectorAll('.article-link').forEach((link) => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
+            const index = parseInt(e.target.closest('.article-preview').dataset.index);
             selectArticle(index);
         });
     });
@@ -252,10 +300,17 @@ async function handleChatSubmit(e) {
     try {
         // Initialize AI model if needed
         if (!state.aiModel) {
-            updateModelStatus('Loading AI model... (this may take a minute)');
             state.aiModel = new AIModel();
-            await state.aiModel.initialize();
-            updateModelStatus('AI model loaded');
+
+            // Show progress modal
+            showModelLoadingProgress();
+
+            await state.aiModel.initialize((message, progress) => {
+                updateModelLoadingProgress(message, progress);
+            });
+
+            hideModelLoadingProgress();
+            updateModelStatus('✓ AI model ready');
         }
 
         // Get answer from AI
@@ -267,6 +322,7 @@ async function handleChatSubmit(e) {
     } catch (error) {
         console.error('Error getting AI response:', error);
         hideLoading();
+        hideModelLoadingProgress();
         addChatMessage('assistant', `❌ Error: ${error.message}`);
         showError('Failed to get AI response. Please try again.');
     }
@@ -385,6 +441,97 @@ function showSuccess(message) {
             successDiv.remove();
         }
     }, 3000);
+}
+
+function showModelLoadingProgress() {
+    const modal = document.createElement('div');
+    modal.id = 'model-loading-modal';
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>🤖 Loading AI Model</h3>
+            <p id="model-progress-text">Initializing...</p>
+            <div class="progress-bar">
+                <div id="model-progress-fill" class="progress-fill"></div>
+            </div>
+            <p class="progress-note">This is a one-time download (~40-60MB). Future sessions will be instant.</p>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function updateModelLoadingProgress(message, progress) {
+    const text = document.getElementById('model-progress-text');
+    const fill = document.getElementById('model-progress-fill');
+
+    if (text) text.textContent = message;
+    if (fill) fill.style.width = `${progress}%`;
+}
+
+function hideModelLoadingProgress() {
+    const modal = document.getElementById('model-loading-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// ============================================
+// Theme Management
+// ============================================
+function toggleTheme() {
+    const body = document.body;
+    const themeIcon = document.querySelector('.theme-icon');
+
+    body.classList.toggle('dark-mode');
+
+    const isDark = body.classList.contains('dark-mode');
+    themeIcon.textContent = isDark ? '☀️' : '🌙';
+
+    // Save preference
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
+function loadThemePreference() {
+    const savedTheme = localStorage.getItem('theme');
+    const themeIcon = document.querySelector('.theme-icon');
+
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (themeIcon) themeIcon.textContent = '☀️';
+    }
+}
+
+// ============================================
+// Keyboard Shortcuts
+// ============================================
+function handleKeyboardShortcuts(e) {
+    // Ctrl/Cmd + K: Focus search
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.getElementById('article-search');
+        if (searchInput) searchInput.focus();
+    }
+
+    // Ctrl/Cmd + /: Focus question input
+    if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        elements.questionInput.focus();
+    }
+
+    // Ctrl/Cmd + D: Toggle dark mode
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        toggleTheme();
+    }
+
+    // Escape: Clear search
+    if (e.key === 'Escape') {
+        const searchInput = document.getElementById('article-search');
+        if (searchInput && searchInput === document.activeElement) {
+            searchInput.value = '';
+            renderArticles('');
+        }
+    }
 }
 
 // ============================================
