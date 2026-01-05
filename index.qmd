@@ -1,0 +1,86 @@
+---
+title: "RSS Feed Reader"
+format: html
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r setup}
+# Load required libraries
+suppressPackageStartupMessages({
+  library(tidyRSS)
+  library(dplyr)
+  library(yaml)
+  library(lubridate)
+  library(stringr)
+})
+
+# Source helper scripts
+source("scripts/fetch-feeds.R")
+source("scripts/process-feeds.R")
+source("scripts/utils.R")
+```
+
+```{r fetch-data}
+# Fetch and process all RSS feeds
+raw_articles <- fetch_all_feeds()
+articles <- process_articles(raw_articles)
+
+# Get statistics
+total_articles <- nrow(articles)
+total_sources <- length(unique(articles$source))
+```
+
+::: {.hero}
+# 📰 Latest News
+
+Aggregating **`r total_articles`** articles from **`r total_sources`** sources
+
+*Updated: `r format(Sys.time(), "%B %d, %Y at %I:%M %p")`*
+:::
+
+```{r render-articles}
+#| results: asis
+
+if (nrow(articles) == 0) {
+  cat('<div class="empty-state">')
+  cat('<p>No articles available. Check your RSS feeds configuration.</p>')
+  cat('</div>')
+} else {
+  # Render each article as a card
+  for (i in 1:min(nrow(articles), 50)) {  # Limit to 50 articles
+    article <- articles[i, ]
+
+    cat(sprintf('
+<article class="article-card">
+  <div class="article-header">
+    <span class="article-source">%s</span>
+    <span class="article-time">%s</span>
+  </div>
+  <h2 class="article-title">
+    <a href="%s" target="_blank" rel="noopener">%s</a>
+  </h2>
+  <p class="article-excerpt">%s</p>
+</article>
+',
+      escape_html(article$source),
+      escape_html(article$time_ago),
+      escape_html(article$link),
+      escape_html(article$title),
+      escape_html(article$excerpt)
+    ))
+  }
+
+  # Show "showing X of Y" if truncated
+  if (nrow(articles) > 50) {
+    cat(sprintf('<p class="article-count">Showing 50 of %d articles</p>', nrow(articles)))
+  }
+}
+```
+
+::: {.footer-note}
+This is a static site generated with [Quarto](https://quarto.org) and R.
+All RSS feeds are fetched server-side—no tracking, no JavaScript required.
+:::

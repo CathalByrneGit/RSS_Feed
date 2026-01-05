@@ -1,0 +1,64 @@
+---
+title: "About"
+---
+
+## 📰 RSS Feed Reader
+
+A minimalist, privacy-focused RSS feed aggregator built with Quarto and R.
+
+### Features
+
+* **Server-side rendering** - No JavaScript required
+* **Privacy-first** - No tracking, no analytics
+* **Fast** - Static HTML, instant loading
+* **Customizable** - Edit `feeds.yml` to add your own sources
+* **Eleventy-inspired design** - Clean typography, minimal aesthetic
+
+### Tech Stack
+
+* **[Quarto](https://quarto.org)** - Static site generator
+* **R** - Data processing and RSS parsing
+* **tidyRSS** - RSS feed parsing
+* **Custom CSS** - Eleventy-inspired minimalist styling
+
+### How it Works
+
+1. **Fetch** - R scripts fetch RSS feeds from configured sources
+2. **Parse** - XML is parsed and cleaned using `tidyRSS`
+3. **Process** - Articles are sorted, filtered, and formatted
+4. **Render** - Quarto generates static HTML pages
+5. **Deploy** - Upload `_site/` to any static host
+
+### Adding Feeds
+
+Edit `feeds.yml` to add your own RSS feeds:
+
+```yaml
+feeds:
+  - name: "Your Feed Name"
+    url: "https://example.com/rss"
+```
+
+Then rebuild the site:
+
+```bash
+quarto render
+```
+
+### Local Development
+
+```bash
+# Preview the site
+quarto preview
+
+# Build for production
+quarto render
+```
+
+### Source Code
+
+View the source on [GitHub](https://github.com/CathalByrneGit/RSS_Feed)
+
+### License
+
+MIT
