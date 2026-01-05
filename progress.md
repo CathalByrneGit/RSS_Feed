@@ -2,7 +2,7 @@
 
 **Project Start Date:** 2026-01-05
 **Current Phase:** Planning & Setup
-**Branch:** `quarto/rss-reader-implementation`
+**Branch:** `claude/quarto-implementation-TRO33`
 
 ---
 
