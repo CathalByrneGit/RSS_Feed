@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A privacy-focused RSS reader with local AI-powered Q&A">
+    <title>Smart RSS Reader</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div>
+                <h1>📰 Smart RSS Reader</h1>
+                <p class="tagline">Chat with your news using local AI</p>
+            </div>
+            <button id="theme-toggle" class="theme-toggle" title="Toggle dark mode">
+                <span class="theme-icon">🌙</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Left Sidebar: Feed List -->
+        <aside class="sidebar">
+            <section class="feed-controls">
+                <h2>RSS Feeds</h2>
+                <form id="add-feed-form">
+                    <input
+                        type="url"
+                        id="feed-url"
+                        placeholder="Enter RSS feed URL..."
+                        required
+                    >
+                    <button type="submit">Add Feed</button>
+                </form>
+            </section>
+
+            <section class="feed-list">
+                <div id="feeds-container">
+                    <p class="empty-state">No feeds yet. Add one to get started!</p>
+                </div>
+            </section>
+        </aside>
+
+        <!-- Main Content: Article Display -->
+        <article class="main-content">
+            <div id="article-view">
+                <div class="welcome-screen">
+                    <h2>Welcome to Smart RSS Reader</h2>
+                    <p>Add an RSS feed from the sidebar to start reading.</p>
+                    <p>Once you select an article, you can ask questions about it using local AI!</p>
+                    <ul>
+                        <li>🔒 Privacy-first: All AI runs in your browser</li>
+                        <li>🚀 No servers: Everything is client-side</li>
+                        <li>💬 Interactive: Chat with your articles</li>
+                    </ul>
+                </div>
+            </div>
+        </article>
+
+        <!-- Right Panel: Chat Interface -->
+        <aside class="chat-panel">
+            <section class="chat-container">
+                <h3>Chat with Article</h3>
+                <div id="chat-log" class="chat-log">
+                    <p class="chat-empty-state">Select an article to start asking questions</p>
+                </div>
+                <form id="chat-form" class="chat-form" disabled>
+                    <input
+                        type="text"
+                        id="question-input"
+                        placeholder="Ask a question about this article..."
+                        disabled
+                    >
+                    <button type="submit" disabled>Ask</button>
+                </form>
+                <div id="model-status" class="model-status"></div>
+            </section>
+        </aside>
+    </main>
+
+    <footer>
+        <p>Powered by <a href="https://huggingface.co/docs/transformers.js" target="_blank">Transformers.js</a> | No data leaves your device</p>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p id="loading-text">Loading...</p>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
