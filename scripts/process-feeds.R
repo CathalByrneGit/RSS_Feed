@@ -23,7 +23,10 @@ process_articles <- function(articles) {
   processed <- articles %>%
     # Parse dates
     mutate(
-      pub_date = as_datetime(item_pub_date, tz = "UTC"),
+      pub_date = case_when(!is.na(item_pub_date) ~ item_pub_date,
+                           !is.na(entry_published) ~ entry_published,
+                           .default = NA_Date_)|>
+        as_datetime(tz = "UTC"),
       date_formatted = format(pub_date, "%B %d, %Y")
     ) %>%
     # Add time ago (after pub_date is created)
@@ -32,9 +35,30 @@ process_articles <- function(articles) {
     ) %>%
     # Clean descriptions and create excerpts
     mutate(
-      description_clean = str_replace_all(item_description, "<[^>]+>", ""),
+      feed_link = if_else(is.na(feed_link),
+                          source_url|>gsub('.rss','',x =_),
+                          feed_link),
+      feed_description = if_else(is.na(feed_description),
+                                 NA_character_,
+                                 feed_description),
+      source = sprintf("%s(%s)",source,if_else(is.na(feed_title),
+                                                     '',
+                                                     feed_title)),
+      description_clean = case_when(!is.na(item_description) ~ item_description,
+                                    !is.na(entry_content) ~ entry_content,
+                                    .default = 'Description not found')%>%
+        str_replace_all( "<[^>]+>", ""),
       excerpt = str_trunc(description_clean, 200, "right"),
-      title_clean = str_replace_all(item_title, "<[^>]+>", "")
+      title_clean = case_when(!is.na(item_title) ~ item_title,
+                              !is.na(entry_title) ~ entry_title,
+                              .default = 'Unkown Title')%>%
+        str_replace_all("<[^>]+>", ""),
+      item_link = case_when(!is.na(item_link) ~ item_link,
+                              !is.na(entry_link) ~ entry_link,
+                              .default = 'Unkown Link'),
+      category = case_when(!is.null(item_category) ~ item_category,
+                           !is.na(entry_category) ~ list(entry_category),
+                           .default = NA )
     ) %>%
     # Sort by date (newest first)
     arrange(desc(pub_date)) %>%
@@ -43,12 +67,15 @@ process_articles <- function(articles) {
       source,
       title = title_clean,
       link = item_link,
+      feed_link,
+      feed_description,
+      feed_icon,
       excerpt,
       pub_date,
       date_formatted,
       time_ago,
-      author = item_author,
-      category = item_category1
+      author = entry_author,
+      category
     )
 
   message(sprintf("  ✓ Processed %d articles", nrow(processed)))

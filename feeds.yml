@@ -10,3 +10,6 @@ feeds:
 
   - name: "Reddit Programming"
     url: "https://www.reddit.com/r/programming/.rss"
+  
+  - name: "Agriland"  
+    url: "https://www.agriland.ie/feed"
