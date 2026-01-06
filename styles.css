@@ -231,3 +231,8 @@ pre code {
     background: none;
     padding: 0;
 }
+
+/* === Utility Classes === */
+.hidden {
+    display: none !important;
+}
