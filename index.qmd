@@ -10,7 +10,8 @@ execute:
 ---
 
 <style>
-.page-container {
+/* Override Quarto's main container to use grid layout */
+#quarto-content > * {
   display: grid;
   grid-template-columns: 250px 1fr;
   gap: 2rem;
@@ -19,10 +20,22 @@ execute:
   padding: 2rem;
 }
 
+/* Hero section should span full width */
+#quarto-content .hero {
+  grid-column: 1 / -1;
+  display: block;
+}
+
 .feed-sidebar {
   position: sticky;
   top: 2rem;
   height: fit-content;
+  grid-column: 1;
+}
+
+.main-content {
+  min-width: 0;
+  grid-column: 2;
 }
 
 .feed-sidebar h3 {
@@ -91,18 +104,28 @@ execute:
   cursor: not-allowed;
 }
 
-.main-content {
-  min-width: 0;
+.footer-note {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 768px) {
-  .page-container {
+  #quarto-content > * {
     grid-template-columns: 1fr;
   }
 
   .feed-sidebar {
     position: static;
     margin-bottom: 2rem;
+    grid-column: 1;
+  }
+
+  .main-content {
+    grid-column: 1;
+  }
+
+  .hero,
+  .footer-note {
+    grid-column: 1;
   }
 }
 </style>
@@ -146,8 +169,6 @@ Aggregating **`r total_articles`** articles from **`r nrow(feed_counts)`** sourc
 
 ```{r render-page}
 #| results: asis
-
-cat('<div class="page-container">')
 
 # === LEFT SIDEBAR: Feed Filter ===
 cat('<aside class="feed-sidebar">')
@@ -230,7 +251,6 @@ if (nrow(articles) == 0) {
 }
 
 cat('</main>')
-cat('</div>')  # Close page-container
 ```
 
 <script>
