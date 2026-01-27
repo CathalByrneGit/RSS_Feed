@@ -30,3 +30,18 @@ logs/
 
 # OS
 Thumbs.db
+
+# R
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# Quarto
+_site/
+/.quarto/
+*_cache/
+*_files/
+
+**/*.quarto_ipynb

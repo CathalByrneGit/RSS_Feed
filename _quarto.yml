@@ -1,0 +1,29 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - "*.qmd"
+    - "!README.md"
+    - "!progress.md"
+    - "!Agents.md"
+
+website:
+  title: "RSS Feed Reader"
+  description: "A minimalist RSS feed aggregator with Eleventy-inspired design"
+  navbar:
+    background: light
+    left:
+      - href: index.qmd
+        text: Home
+      - href: about.qmd
+        text: About
+  page-footer:
+    center: "Built with Quarto and R | No tracking, pure static"
+
+format:
+  html:
+    theme: none
+    css: styles.css
+    toc: false
+    page-layout: full
+    anchor-sections: false

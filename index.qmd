@@ -1,0 +1,339 @@
+---
+title: "RSS Feed Reader"
+format:
+  html:
+    page-layout: full
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+<style>
+.page-container {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.feed-sidebar {
+  position: sticky;
+  top: 2rem;
+  height: fit-content;
+}
+
+.feed-sidebar h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.feed-list {
+  list-style: none;
+  padding: 0;
+}
+
+.feed-item {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+}
+
+.feed-item:hover {
+  background-color: var(--color-light-bg);
+  border-color: var(--color-border);
+}
+
+.feed-item.active {
+  background-color: rgba(0, 85, 204, 0.1);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.feed-count {
+  float: right;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.load-more-btn {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: 2rem auto;
+  padding: 1rem 2rem;
+  background-color: var(--color-accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.load-more-btn:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.load-more-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.main-content {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    grid-template-columns: 1fr;
+  }
+
+  .feed-sidebar {
+    position: static;
+    margin-bottom: 2rem;
+  }
+}
+</style>
+
+```{r setup}
+# Load required libraries
+suppressPackageStartupMessages({
+  library(tidyRSS)
+  library(dplyr)
+  library(yaml)
+  library(lubridate)
+  library(stringr)
+})
+
+# Source helper scripts
+source("scripts/fetch-feeds.R")
+source("scripts/process-feeds.R")
+source("scripts/utils.R")
+```
+
+```{r fetch-data}
+# Fetch and process all RSS feeds
+raw_articles <- fetch_all_feeds()
+articles <- process_articles(raw_articles)
+
+# Get statistics
+total_articles <- nrow(articles)
+feed_counts <- articles %>%
+  group_by(source) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  arrange(desc(count))
+```
+
+::: {.hero}
+# 📰 Latest News
+
+Aggregating **`r total_articles`** articles from **`r nrow(feed_counts)`** sources
+
+*Updated: `r format(Sys.time(), "%B %d, %Y at %I:%M %p")`*
+:::
+
+```{r render-page}
+#| results: asis
+
+cat('<div class="page-container">')
+
+# === LEFT SIDEBAR: Feed Filter ===
+cat('<aside class="feed-sidebar">')
+cat('<h3>📑 Filter by Feed</h3>')
+cat('<ul class="feed-list">')
+
+# "All Feeds" option
+cat(sprintf('<li class="feed-item active" data-feed="all" onclick="filterFeed(\'all\')">
+  All Feeds <span class="feed-count">%d</span>
+</li>', total_articles))
+
+# Individual feed options
+for (i in 1:nrow(feed_counts)) {
+  feed <- feed_counts[i, ]
+  # Create a safe ID from the feed name
+  feed_id <- gsub("[^a-zA-Z0-9]", "-", feed$source)
+
+  cat(sprintf('<li class="feed-item" data-feed="%s" onclick="filterFeed(\'%s\')">
+  %s <span class="feed-count">%d</span>
+</li>',
+    feed_id,
+    feed_id,
+    htmltools::htmlEscape(feed$source),
+    feed$count
+  ))
+}
+
+cat('</ul>')
+cat('</aside>')
+
+# === MAIN CONTENT: Article List ===
+cat('<main class="main-content">')
+
+if (nrow(articles) == 0) {
+  cat('<div class="empty-state">')
+  cat('<p>No articles available. Check your RSS feeds configuration.</p>')
+  cat('</div>')
+} else {
+  cat('<div id="article-list">')
+
+  # Render each article with data attribute for filtering
+  for (i in 1:nrow(articles)) {
+    article <- articles[i, ]
+    feed_id <- gsub("[^a-zA-Z0-9]", "-", article$source)
+
+    # Show first 20 articles, hide the rest initially
+    display_class <- if (i <= 20) "article-card" else "article-card hidden"
+
+    cat(sprintf('
+<article class="%s" data-feed="%s" data-index="%d">
+  <div class="article-header">
+    <span class="article-source">%s</span>
+    <span class="article-time">%s</span>
+  </div>
+  <h2 class="article-title">
+    <a href="%s" target="_blank" rel="noopener">%s</a>
+  </h2>
+  <p class="article-excerpt">%s</p>
+</article>
+',
+      display_class,
+      feed_id,
+      i,
+      htmltools::htmlEscape(article$source),
+      htmltools::htmlEscape(article$time_ago),
+      htmltools::htmlEscape(article$link),
+      htmltools::htmlEscape(article$title),
+      htmltools::htmlEscape(article$excerpt)
+    ))
+  }
+
+  cat('</div>')
+
+  # Load More button (only show if > 20 articles)
+  if (nrow(articles) > 20) {
+    cat(sprintf('<button class="load-more-btn" onclick="loadMore()" id="load-more-btn">
+  Load More Articles (%d remaining)
+</button>', nrow(articles) - 20))
+  }
+}
+
+cat('</main>')
+cat('</div>')  # Close page-container
+```
+
+<script>
+// Track currently visible count
+let currentlyVisible = 20;
+let currentFilter = 'all';
+
+// Filter articles by feed
+function filterFeed(feedId) {
+  currentFilter = feedId;
+  currentlyVisible = 20;
+
+  // Update active state in sidebar
+  document.querySelectorAll('.feed-item').forEach(item => {
+    if (item.dataset.feed === feedId) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
+  });
+
+  // Filter articles
+  const articles = document.querySelectorAll('.article-card');
+  let visibleCount = 0;
+
+  articles.forEach((article, index) => {
+    const articleFeed = article.dataset.feed;
+    const shouldShow = (feedId === 'all' || articleFeed === feedId);
+
+    if (shouldShow) {
+      visibleCount++;
+      if (visibleCount <= 20) {
+        article.classList.remove('hidden');
+      } else {
+        article.classList.add('hidden');
+      }
+    } else {
+      article.classList.add('hidden');
+    }
+  });
+
+  // Update load more button
+  updateLoadMoreButton();
+}
+
+// Load more articles
+function loadMore() {
+  const articles = document.querySelectorAll('.article-card');
+  let visibleCount = 0;
+  let shownCount = 0;
+
+  articles.forEach(article => {
+    const articleFeed = article.dataset.feed;
+    const shouldShow = (currentFilter === 'all' || articleFeed === currentFilter);
+
+    if (shouldShow) {
+      visibleCount++;
+      if (!article.classList.contains('hidden')) {
+        shownCount++;
+      } else if (shownCount < currentlyVisible + 20 && visibleCount > currentlyVisible) {
+        article.classList.remove('hidden');
+        shownCount++;
+      }
+    }
+  });
+
+  currentlyVisible = shownCount;
+  updateLoadMoreButton();
+}
+
+// Update load more button state
+function updateLoadMoreButton() {
+  const btn = document.getElementById('load-more-btn');
+  if (!btn) return;
+
+  const articles = document.querySelectorAll('.article-card');
+  let totalMatching = 0;
+  let currentlyShown = 0;
+
+  articles.forEach(article => {
+    const articleFeed = article.dataset.feed;
+    const shouldShow = (currentFilter === 'all' || articleFeed === currentFilter);
+
+    if (shouldShow) {
+      totalMatching++;
+      if (!article.classList.contains('hidden')) {
+        currentlyShown++;
+      }
+    }
+  });
+
+  const remaining = totalMatching - currentlyShown;
+
+  if (remaining > 0) {
+    btn.style.display = 'block';
+    btn.textContent = `Load More Articles (${remaining} remaining)`;
+  } else {
+    btn.style.display = 'none';
+  }
+}
+</script>
+
+::: {.footer-note}
+This is a static site generated with [Quarto](https://quarto.org) and R.
+All RSS feeds are fetched server-side with minimal client-side filtering.
+:::
